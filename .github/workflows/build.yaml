@@ -1,5 +1,12 @@
 name: Build binaries
-on: [push]
+
+on:
+  push:
+    tags:
+      - '*'
+  workflow_dispatch: null
+  pull_request:
+    branches: [ '*' ]
 
 jobs:
   build:
@@ -7,7 +14,7 @@ jobs:
       fail-fast: false
       max-parallel: 3
       matrix:
-        os: [ubuntu-20.04, ubuntu-22.04-arm, macos-13, macos-14, windows-2022]
+        os: [ubuntu-22.04, ubuntu-22.04-arm, macos-14, windows-2022]
     runs-on: ${{ matrix.os }}
 
     steps:
@@ -25,11 +32,16 @@ jobs:
       if: runner.os != 'Windows'
 
     - name: Build
-      run: pyinstaller
-        --onefile
-        --name nile 
-        ${{ steps.strip.outputs.option }}
-        nile/cli.py
+      shell: bash
+      run: |
+        OS_NAME="$(echo "$RUNNER_OS" | tr '[:upper:]' '[:lower:]')"
+        ARCH_RAW="$(uname -m 2>/dev/null || echo "$RUNNER_ARCH")"
+        ARCH_NAME="$(echo "$ARCH_RAW" | tr '[:upper:]' '[:lower:]')"
+        pyinstaller \
+          --onefile \
+          --name nile_${OS_NAME}_${ARCH_NAME} \
+          ${{ steps.strip.outputs.option }} \
+          nile/cli.py
       env:
         PYTHONOPTIMIZE: 1
 
@@ -37,3 +49,21 @@ jobs:
       with:
         name: nile-${{ matrix.os }}
         path: dist/*
+    
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          files: dist/*
