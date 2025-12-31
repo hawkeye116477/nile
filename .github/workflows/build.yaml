@@ -60,9 +60,16 @@ jobs:
         uses: actions/download-artifact@v7
         with:
           path: dist
+          
+      - name: Prepare files for release
+        run: |
+          mkdir -p release_files
+          find dist -type f -exec cp {} release_files/ \;
+          echo "Files prepared for release:"
+          ls -lh release_files
 
       - name: Create GitHub release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name }}
-          files: dist/*
+          files: release_files/*
