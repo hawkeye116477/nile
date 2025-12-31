@@ -12,16 +12,15 @@ jobs:
   build:
     strategy:
       fail-fast: false
-      max-parallel: 3
       matrix:
         os: [ubuntu-22.04, ubuntu-22.04-arm, macos-14, windows-2022]
     runs-on: ${{ matrix.os }}
 
     steps:
-    - uses: actions/checkout@v4
-    - uses: actions/setup-python@v5
+    - uses: actions/checkout@v6
+    - uses: actions/setup-python@v6
       with:
-        python-version: '3.8'
+        python-version: '3.12'
 
     - name: Install pyinstaller and dependencies
       run: pip3 install --upgrade pyinstaller -r requirements.txt
@@ -45,7 +44,7 @@ jobs:
       env:
         PYTHONOPTIMIZE: 1
 
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@v6
       with:
         name: nile-${{ matrix.os }}
         path: dist/*
@@ -58,7 +57,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Download all build artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           path: dist
 
